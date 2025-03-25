@@ -1,5 +1,9 @@
 # HelloWorldLight
-An attempt at making the lightest possible binary of a Hello World program, using a **minimal** x86 32-bit Linux “Hello World” program in NASM Assembly. It demonstrates how to push the string onto the stack in the correct byte order for a proper printout.
+An attempt at making the lightest possible binary of a Hello World program, using a **minimal** x86 32-bit Linux “Hello World” program in NASM Assembly. 
+
+It demonstrates how to push the string onto the stack in the correct byte order for a proper printout.
+
+The size of the generated file is 4.3kb.
 
 ---
 
