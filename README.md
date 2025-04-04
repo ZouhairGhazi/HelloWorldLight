@@ -1,9 +1,9 @@
 # HelloWorldLight
-An attempt at making the lightest possible binary of a Hello World program, using a **minimal** x86 32-bit Linux “Hello World” program in NASM Assembly. 
+An attempt at making the lightest possible binary of a Hello World program, using a **minimal** x86 64-bit Linux “Hello World” program in NASM Assembly. 
 
 It demonstrates how to push the string onto the stack in the correct byte order for a proper printout.
 
-The size of the generated file is 4.3kb.
+The size of the executable is 464 bytes.
 
 ---
 
@@ -21,43 +21,46 @@ It’s meant to be **as small as possible** while still being a fully valid, sta
 ## Code
 
 ```asm
-section .text
-global _start
+        bits 64
+
+        section .rodata
+msg:    db  "Hello world", 0x0A
+msglen: equ $ - msg
+
+        section .text
+        global _start
 
 _start:
-    ; Push the string "Hello World!\n" in reverse order
-    push byte  0x0a         ; '\n'
-    push dword 0x21646c72   ; "rld!"
-    push dword 0x6f57206f   ; "o Wo"
-    push dword 0x6c6c6548   ; "Hell"
+        ; sys_write(1, msg, msglen)
+        mov     rax, 1        ; system call: write
+        mov     rdi, 1        ; fd = stdout
+        mov     rsi, msg      ; address of buffer
+        mov     rdx, msglen   ; length of buffer
+        syscall
 
-    mov ecx, esp            ; ecx points to the start of the string
-    mov edx, 13             ; length of "Hello World!\n"
-    mov ebx, 1              ; file descriptor (stdout)
-    mov eax, 4              ; sys_write
-    int 0x80
-
-    mov eax, 1              ; sys_exit
-    xor ebx, ebx            ; return code 0
-    int 0x80
+        ; sys_exit(0)
+        mov     rax, 60       ; system call: exit
+        xor     rdi, rdi      ; status = 0
+        syscall
 ```
 
 ## How to Build and Run
-Note: You’ll need the NASM assembler and a linker that can produce 32-bit ELF binaries.
+Note: You’ll need the NASM assembler and a linker that can produce 64-bit ELF binaries.
 
 1. Assemble:
 
-```bash nasm -f elf32 hello.asm -o hello.o```
+```nasm -f elf64 hello.asm -o hello.o```
 
-This creates a 32-bit object file named hello.o.
+This creates a 64-bit object file named hello.o.
 
 2. Link:
 
-```bash ld -m elf_i386 -s hello.o -o hello```
+```ld -m elf_x86_64 -s -n -nostdlib -o hello hello.o```
 
--m elf_i386 forces 32-bit mode.
--s strips debugging symbols to reduce file size.
-This produces the executable named hello.
+This command uses the GNU linker to combine object files and create executables. -m elf_x86_64 is used to specifiy the target format.
+-s: reduces the binary size by removing unnecessary metadata (e.g. function names, source mappings, etc).
+-n: is very important. It disables page alignment of sections. Normally, the linker aligns sections to page boundaries (like 4096 bytes). This flag tells the linker not to do that, reducing binary size significantly.
+-nostdlib: Tells the linker not to use the standard libraries. Skips linking against libc, crt0.o, and other default startup files. This is essential when doing direct syscalls (as in our assembly), and when we don’t need anything from libc. This also prevents large dependencies from bloating the binary.
 
 3. Execute:
 
